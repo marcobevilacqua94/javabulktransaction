@@ -42,7 +42,7 @@ public class App {
 
                         .environment(env -> {
                             env.transactionsConfig(TransactionsConfig.builder()
-                                    .timeout(Duration.ofSeconds(Long.parseLong(args[5])))
+                                    .timeout(Duration.ofSeconds(Integer.parseInt(args[5])))
                                     .build());
                             env.ioConfig().numKvConnections(Integer.parseInt(args[6]));
                         })
@@ -110,8 +110,7 @@ public class App {
                             return firstOp.then(restOfOps);
 
                         }, TransactionOptions.transactionOptions().
-
-                                timeout(Duration.ofSeconds(Long.parseLong(args[5])))
+                                timeout(Duration.ofSeconds(Integer.parseInt(args[5])))
                 ).
 
                 doOnError(err ->

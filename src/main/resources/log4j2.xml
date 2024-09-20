@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="ERROR">
+<Configuration status="INFO">
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="%d{ISO8601_OFFSET_DATE_TIME_HHCMM} %-5p [%c:%L] %m%n"/>
@@ -11,7 +11,7 @@
     <Loggers>
         <!-- Trace/debug/info messages from the Couchbase SDK's repackaged Netty
              are of little interest, unless you're debugging a network issue. -->
-        <Logger name="com.couchbase.client.core.deps.io.netty" level="ERROR"/>
+        <Logger name="com.couchbase.client.core.deps.io.netty" level="INFO"/>
 
         <!-- Uncomment if using the 'io.captureTraffic' client setting. -->
         <!-- <Logger name="com.couchbase.io" level="trace"/> -->
@@ -20,10 +20,10 @@
              this prefix. Change the level to "debug" to see more
              details about SDK activity, or "warn" to see less.
              In production environments, we recommend "info". -->
-        <Logger name="com.couchbase" level="ERROR"/>
+        <Logger name="com.couchbase" level="INFO"/>
 
         <!-- The default level for everything else. -->
-        <Root level="ERROR">
+        <Root level="INFO">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="MAIN"/>
         </Root>
