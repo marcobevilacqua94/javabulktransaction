@@ -64,7 +64,7 @@ public class App {
                 ReactiveBucket bucket = cluster.bucket("test").reactive();
                 bucket.waitUntilReady(Duration.ofSeconds(10)).block();
                 for (String atr : ActiveTransactionRecordIds.allAtrs(1024)) {
-                    Optional<ActiveTransactionRecords> optActs = ActiveTransactionRecord.getAtr(cluster.core(), CollectionIdentifier.fromDefault("test"), atr, Duration.ofMillis(5), null).onErrorComplete().block();
+                    Optional<ActiveTransactionRecords> optActs = ActiveTransactionRecord.getAtr(cluster.core(), CollectionIdentifier.fromDefault("test"), atr, Duration.ofMillis(2500), null).onErrorComplete().block();
                     if (optActs == null) continue;
                     optActs.ifPresent(act -> {
                         System.out.println("Cleaning transaction record " + act.id());
