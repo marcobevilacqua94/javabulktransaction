@@ -1,6 +1,14 @@
 package org.example;
 
+import com.couchbase.client.core.cnc.events.transaction.TransactionCleanupAttemptEvent;
+import com.couchbase.client.core.cnc.events.transaction.TransactionCleanupEndRunEvent;
 import com.couchbase.client.core.error.DocumentNotFoundException;
+import com.couchbase.client.core.io.CollectionIdentifier;
+import com.couchbase.client.core.transaction.atr.ActiveTransactionRecordIds;
+import com.couchbase.client.core.transaction.cleanup.CleanupRequest;
+import com.couchbase.client.core.transaction.components.ActiveTransactionRecord;
+import com.couchbase.client.core.transaction.components.ActiveTransactionRecordEntry;
+import com.couchbase.client.core.transaction.components.ActiveTransactionRecords;
 import com.couchbase.client.java.*;
 import com.couchbase.client.java.json.JsonObject;
 import com.couchbase.client.java.transactions.TransactionResult;
@@ -15,6 +23,8 @@ import reactor.core.scheduler.Schedulers;
 
 import java.io.PrintWriter;
 import java.time.Duration;
+import java.util.Optional;
+
 
 public class App {
 
@@ -36,6 +46,7 @@ public class App {
 
         jsonObject.put("body", RandomString(Integer.parseInt(args[4])));
         boolean upsert = args[8].equals("true");
+        boolean firstClean = args[9].equals("true");
         try (Cluster cluster = Cluster.connect(
                 args[0],
                 ClusterOptions.clusterOptions(args[1], args[2])
@@ -49,6 +60,35 @@ public class App {
         )
 
         ) {
+            if (firstClean) {
+                ReactiveBucket bucket = cluster.bucket("test").reactive();
+                bucket.waitUntilReady(Duration.ofSeconds(10)).block();
+                for (String atr : ActiveTransactionRecordIds.allAtrs(1024)) {
+                    Optional<ActiveTransactionRecords> optActs = ActiveTransactionRecord.getAtr(cluster.core(), CollectionIdentifier.fromDefault("test"), atr, Duration.ofMillis(5), null).onErrorComplete().block();
+                    if (optActs == null) continue;
+                    optActs.ifPresent(act -> {
+                        System.out.println("Cleaning transaction record " + act.id());
+                        for (ActiveTransactionRecordEntry entry : act.entries()) {
+                            cluster.core().transactionsCleanup().getCleaner()
+                                    .performCleanup(CleanupRequest
+                                                    .fromAtrEntry(
+                                                            CollectionIdentifier.fromDefault("test"),
+                                                            entry
+                                                    )
+                                            , false, null).block();
+                        }
+                    });
+                }
+                cluster.environment().eventBus().subscribe(event -> {
+                    if (event instanceof TransactionCleanupAttemptEvent || event instanceof TransactionCleanupEndRunEvent) {
+                        System.out.println(event.description());
+                    }
+                });
+
+                System.out.println("Waiting 5 secs...");
+                Thread.sleep(5000);
+            }
+
             bulkTransactionReactive(jsonObject, cluster, args, true, upsert);
             System.out.println("Waiting 5 secs...");
             Thread.sleep(5000);
@@ -78,6 +118,7 @@ public class App {
 
         int concurrency = Runtime.getRuntime().availableProcessors() * 2 * Integer.parseInt(args[7]);
         int parallelThreads = Runtime.getRuntime().availableProcessors() * Integer.parseInt(args[7]);
+
         TransactionResult result = cluster.reactive().transactions().run((ctx) -> {
                             Mono<Void> firstOp;
                             if (upsert) {
@@ -104,25 +145,26 @@ public class App {
                                                 }
 
                                             }
-                                    ).sequential().then();
+                                    ).sequential()
+                                    .then();
 
 
                             return firstOp.then(restOfOps);
 
                         }, TransactionOptions.transactionOptions().
                                 timeout(Duration.ofSeconds(Integer.parseInt(args[5])))
-                ).
+                )
+                .doOnError(err ->
+                        {
+                            if (warmup)
+                                System.out.println("Warmup transaction failed");
+                            else
+                                System.out.println("Transaction failed");
+                            err.printStackTrace();
+                        }
+                )
+                .block();
 
-                doOnError(err ->
-
-                {
-                    if (warmup)
-                        System.out.println("Warmup transaction failed");
-                    else
-                        System.out.println("Transaction failed");
-                }).
-
-                block();
 
         long endTime = System.nanoTime();
         long duration = (endTime - startTime);
