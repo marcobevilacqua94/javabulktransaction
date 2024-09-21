@@ -84,11 +84,12 @@ public class App {
                         System.out.println(event.description());
                     }
                 });
-
                 System.out.println("Waiting 5 secs...");
                 Thread.sleep(5000);
             }
 
+
+            cluster.core().transactionsCleanup().shutdown(Duration.ofSeconds(5));
             bulkTransactionReactive(jsonObject, cluster, args, true, upsert);
             System.out.println("Waiting 5 secs...");
             Thread.sleep(5000);
