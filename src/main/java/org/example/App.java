@@ -4,6 +4,7 @@ import com.couchbase.client.core.cnc.events.transaction.TransactionCleanupAttemp
 import com.couchbase.client.core.cnc.events.transaction.TransactionCleanupEndRunEvent;
 import com.couchbase.client.core.error.DocumentNotFoundException;
 import com.couchbase.client.core.io.CollectionIdentifier;
+import com.couchbase.client.core.msg.kv.DurabilityLevel;
 import com.couchbase.client.core.transaction.atr.ActiveTransactionRecordIds;
 import com.couchbase.client.core.transaction.cleanup.CleanupRequest;
 import com.couchbase.client.core.transaction.components.ActiveTransactionRecord;
@@ -53,6 +54,7 @@ public class App {
 
                         .environment(env -> {
                             env.transactionsConfig(TransactionsConfig.builder()
+                                            .durabilityLevel(DurabilityLevel.MAJORITY)
                                     .timeout(Duration.ofSeconds(Integer.parseInt(args[5])))
                                     .build());
                             env.ioConfig().numKvConnections(Integer.parseInt(args[6]));
