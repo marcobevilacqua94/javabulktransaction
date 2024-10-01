@@ -176,7 +176,7 @@ public class App {
             System.out.println("Warmup transaction completed");
         else {
             System.out.println("Transaction completed");
-            System.out.println("Transaction time: " + duration / 1000000000 + "s");
+            System.out.println("Transaction time: " + duration / 1000000 + "ms");
             System.out.println("Num of docs: " + num);
             System.out.println("Doc size: " + args[4] + "kb");
         }
